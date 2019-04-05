@@ -91,27 +91,35 @@ ENV JAVA_OPTS -Djenkins.install.runSetupWizard=false
 COPY executors.groovy /usr/share/jenkins/ref/init.groovy.d/
 COPY default-user.groovy /usr/share/jenkins/ref/init.groovy.d/
  
-VOLUME /var/jenkins_home
+#VOLUME /var/jenkins_home
 
+#RUN chown -R jenkins:jenkins /var/jenkins_home
 
 # Name the jobs  
 ARG job_name_1="sample-maven-job"  
+RUN mkdir -p /usr/share/jenkins/ref/jobs/${job_name_1}/latest/builds/1
+COPY ${job_name_1}_config.xml /usr/share/jenkins/ref/jobs/${job_name_1}/config.xml
+COPY credentials.xml /usr/share/jenkins/ref/
 
 # Create the job workspaces  
-RUN mkdir -p "$JENKINS_HOME"/workspace/${job_name_1}  
+#RUN mkdir -p "$JENKINS_HOME"/workspace/${job_name_1}  
+#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}
+#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}/latest
+#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}/latest/builds
+#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}/latest/builds/1
 
 # Create the jobs folder recursively  
-RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}  
-RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}/latest/
-RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}/builds/1/
+#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}  
+#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}/latest/
+#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}/builds/1/
 
 # Add the custom configs to the container  
-COPY ${job_name_1}_config.xml "$JENKINS_HOME"/jobs/${job_name_1}/config.xml  
+#COPY ${job_name_1}_config.xml "$JENKINS_HOME"/jobs/${job_name_1}/config.xml  
 
-
+RUN id
 
 USER root
-
+RUN chown -R jenkins:jenkins "$JENKINS_HOME"/
 RUN apt-get update -qq \
     && apt-get install -qqy apt-transport-https ca-certificates curl gnupg2 software-properties-common 
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
