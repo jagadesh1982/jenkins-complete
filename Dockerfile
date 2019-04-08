@@ -1,5 +1,6 @@
-# Starting off with the Jenkins base Image
-FROM jenkins/jenkins:latest
+FROM jenkins/jenkins:lts
+
+ARG HOST_DOCKER_GROUP_ID
  
 # Installing the plugins we need using the in-built install-plugins.sh script
 RUN install-plugins.sh pipeline-graph-analysis:1.9 \
@@ -91,10 +92,6 @@ ENV JAVA_OPTS -Djenkins.install.runSetupWizard=false
 COPY executors.groovy /usr/share/jenkins/ref/init.groovy.d/
 COPY default-user.groovy /usr/share/jenkins/ref/init.groovy.d/
  
-#VOLUME /var/jenkins_home
-
-#RUN chown -R jenkins:jenkins /var/jenkins_home
-
 # Name the jobs  
 ARG job_name_1="sample-maven-job"
 RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}/latest/  
@@ -103,18 +100,6 @@ COPY ${job_name_1}_config.xml /usr/share/jenkins/ref/jobs/${job_name_1}/config.x
 COPY credentials.xml /usr/share/jenkins/ref/
 COPY trigger-job.sh /usr/share/jenkins/ref/
 #RUN chown -R 777 /usr/share/jenkins/ref/trigger-job.sh
-
-# Create the job workspaces  
-#RUN mkdir -p "$JENKINS_HOME"/workspace/${job_name_1}  
-#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}
-#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}/latest
-#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}/latest/builds
-#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}/latest/builds/1
-
-# Create the jobs folder recursively  
-#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}  
-#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}/latest/
-#RUN mkdir -p "$JENKINS_HOME"/jobs/${job_name_1}/builds/1/
 
 # Add the custom configs to the container  
 #COPY ${job_name_1}_config.xml "$JENKINS_HOME"/jobs/${job_name_1}/config.xml  
@@ -125,25 +110,20 @@ USER root
 #RUN chown -R jenkins:jenkins "$JENKINS_HOME"/
 RUN chmod -R 777 /usr/share/jenkins/ref/trigger-job.sh
 
+# Create 'docker' group with provided group ID 
+# and add 'jenkins' user to it
+RUN groupadd docker -g ${HOST_DOCKER_GROUP_ID} && \
+    usermod -a -G docker jenkins
 
-ARG DOCKER_CLIENT=docker-17.06.2-ce.tgz
 
-#https://download.docker.com/linux/static/stable/x86_64/docker-17.06.2-ce.tgz
+RUN apt-get update && apt-get install -y tree nano curl sudo
+RUN curl https://get.docker.com/builds/Linux/x86_64/docker-latest.tgz | tar xvz -C /tmp/ && mv /tmp/docker/docker /usr/bin/docker
+RUN curl -L "https://github.com/docker/compose/releases/download/1.23.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+RUN chmod 755 /usr/local/bin/docker-compose
+RUN usermod -a -G sudo jenkins
+RUN echo "jenkins ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-RUN cd /tmp/ \
-   && curl -sSL -O https://download.docker.com/linux/static/stable/x86_64/${DOCKER_CLIENT}  \
-   && tar zxf ${DOCKER_CLIENT} \
-   && mkdir -p /usr/local/bin \
-   && mv ./docker/docker /usr/local/bin \
-   && chmod +x /usr/local/bin/docker \
-   && rm -rf /tmp/*
-RUN groupadd docker 
-RUN usermod -aG docker jenkins
 RUN newgrp docker
-
-
-#RUN sudo service docker stop
-#RUN sudo nohup docker daemon -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock &
 
 USER jenkins
 #ENTRYPOINT ["/bin/sh -c /var/jenkins_home/trigger-job.sh"]
