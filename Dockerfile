@@ -91,7 +91,7 @@ ENV JAVA_OPTS -Djenkins.install.runSetupWizard=false
 # Start-up scripts to set number of executors and creating the admin user
 COPY executors.groovy /usr/share/jenkins/ref/init.groovy.d/
 COPY default-user.groovy /usr/share/jenkins/ref/init.groovy.d/
-COPY dockerhub-credential.groovy /usr/share/jenkins/ref/init.groovy.d/
+COPY create-credential.groovy /usr/share/jenkins/ref/init.groovy.d/
  
 # Name the jobs  
 ARG job_name_1="sample-maven-job"
